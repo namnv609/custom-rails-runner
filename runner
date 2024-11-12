@@ -1,0 +1,52 @@
+#!/usr/bin/env <path/to/rails/project>/bin/rails runner
+
+cmd_options = {
+  no_ar_log: false,
+  no_sandbox: false,
+}
+
+ARGV << "-h" if ARGV.empty?
+
+::OptionParser.new do |opts|
+  opts.on("-a", ::TrueClass, "Disable ActiveRecord log(s)") do |is_disable_ar_log|
+    cmd_options[:no_ar_log] = is_disable_ar_log
+  end
+
+  opts.on("-s", ::TrueClass, "Disable sandbox mode") do |is_disable_sandbox|
+    cmd_options[:no_sandbox] = is_disable_sandbox
+  end
+
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+file_path = ::Pathname.new(ARGV[0].to_s)
+
+unless file_path.exist?
+  puts "Script file not found"
+  exit(1)
+end
+
+inline_options = ::File.read(file_path).lines[0..1].each do |content|
+  options = content.squish.split(" ")
+  opt_key = options[1].to_s.gsub("-", "_").gsub(":", "")
+  # is_disabled = /^(true|yes|1|y)$/i.match?(options[2].to_s)
+  cmd_options[:no_ar_log] = true if opt_key == "no_ar_log"
+  cmd_options[:no_sandbox] = true if opt_key == "no_sandbox"
+end
+
+::ActiveRecord::Base.logger = Logger.new(STDOUT) unless cmd_options[:no_ar_log]
+
+unless cmd_options[:no_sandbox]
+  ::ActiveRecord::Base.transaction do
+    ::ActiveRecord::Base.connection.create_savepoint(:debug_savepoint)
+
+    load file_path
+
+    ::ActiveRecord::Base.connection.rollback_to_savepoint(:debug_savepoint)
+  end
+else
+  load file_path
+end
