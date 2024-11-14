@@ -6,6 +6,7 @@ Supports showing ActiveRecord logs and sandbox mode.
 
 * Copy the script to `<path/to/rails/project>/bin` (e.g., `/home/acme/rails-prj/bin/runner`).
 * Update the path to the Rails runner in the shebang (first line of the script). E.g., `#!/usr/bin/env /home/acme/rails-prj/bin/rails runner`.
+* Change script to executable permission: `chmod +x <path/to/rails/project>/bin/runner` 
 * Run with `bin/runner <path to Ruby script>`.
 
 ## Options
